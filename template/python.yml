@@ -1,0 +1,4 @@
+.tpl:python:
+  image: cats-cirunner-docker-stable-intranet.registry.saas.cagip.group.gca/ftcr/python-ansible-runner:3.16
+  when:
+    manual
