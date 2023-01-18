@@ -1,0 +1,6 @@
+.tpl:deploy:
+  extends: .tpl:python
+  variables:
+    REQUESTS_CA_BUNDLE: "/usr/local/share/ca-certificates/carioca-bundle.crt"
+  script:
+    - python socloud/rheia.py
