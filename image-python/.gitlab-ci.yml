@@ -1,0 +1,33 @@
+# Ci permettant de build une image docker puis de la push vers artifactory
+
+#variables nécessaires au bon fonctionnement
+#${ARTIFACTORY_TOKEN} il s'agit du token artifactory que vous allez utiliser pour pousser votre image sur artifactory
+variables:
+  CAGIP_REGISTRY: registry.saas.cagip.group.gca
+  TARGET_REPO: cats-cirunner-docker-stable-intranet.${CAGIP_REGISTRY}
+  IMAGE_NAME: $CI_PROJECT_NAME
+
+build_image_and_push_image:
+  script:
+    - sed -i "s/VERSION_IMAGE/$CI_COMMIT_BRANCH/" Docker/Dockerfile
+    - cd Docker &&
+      docker build 
+        --build-arg http-proxy="http://hlzuyt1exe09.yres.ytech:443" 
+        --build-arg https-proxy="http://hlzuyt1exe09.yres.ytech:443" 
+        --build-arg HTTP_PROXY="http://hlzuyt1exe09.yres.ytech:443" 
+        --build-arg HTTPS_PROXY="http://hlzuyt1exe09.yres.ytech:443" 
+        --build-arg noProxy="ttp10-nxus.ca-technologies.fr" 
+        --tag $TARGET_REPO/ftcr/$IMAGE_NAME:$CI_COMMIT_BRANCH
+        --no-cache 
+        --pull 
+        --force-rm .
+    - echo "${CIRUNNER_ARTIFACTORY_TOKEN_VALUE}" | docker login 
+         --username "${CIRUNNER_ARTIFACTORY_TOKEN_NAME}" 
+         --password-stdin 
+         $TARGET_REPO
+    - docker  push  $TARGET_REPO/ftcr/$IMAGE_NAME:$CI_COMMIT_BRANCH
+    - echo New image is $TARGET_REPO/ftcr/$IMAGE_NAME:$CI_COMMIT_BRANCH
+    - docker image rm --force  $TARGET_REPO/ftcr/$IMAGE_NAME:$CI_COMMIT_BRANCH
+  except:
+    variables:
+      - $CI_COMMIT_BRANCH == "master"
