@@ -1,0 +1,140 @@
+include: # INCLUSION DES TEMPLATES
+  - project: cats/partage-transverse/p0498/s2221/kit-deploiement-ansible
+    ref: v1
+    file: main.yml
+
+###############################################################
+###############################################################
+#                     NE PAS MODIFIER
+#Workflow de lancement  pour bloquer l'automatisme de lancement du pipeline
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+###############################################################
+
+variables: # DEFINITION DES VARIABLES COMMUNES A TOUS LES JOBS
+  CODE_SOLUTION:
+    value: ${S_CODE_SOLUTION}
+    description: <OBLIGATOIRE> Automatiquement renseigné sinon le définir sous GITLABCI => https://ttp10-pord.ca-technologies.fr/xwiki/bin/view/Cadre%20de%20r%C3%A9f%C3%A9rence/Fili%C3%A8res%20DevOps/7%20-%20CI-CD/GitLab%20CI%E2%9A%A1CD/Bo%C3%AEte%20%C3%A0%20outils%20CA-TS/CI%E2%9A%A1CD%20Variables/
+    ###########################################################
+    ## DEFINITION DU MOT DE PASSE DU USER OBLIGATOIRE POUR LES MICRO SERVICES XOPS
+    ###########################################################
+  USER_PASSWORD: # UNIQUEMENT en cas d'utilisation des micro services XOPS et d'une MEP (Check RFC)
+    value: "" # NE PAS MODIFIER CETTE VALEUR ICI MAIS AU LANCEMENT DU PIPELINE
+    description: A définir SEULEMENT si vous utilisez les micro-services XOPS ou lors d'une MEP (Check RFC)
+    ###########################################################
+    ## DEFINITION DU PLAYBOOK
+    ###########################################################
+  PLAYBOOK_URL:
+    value: $CI_PROJECT_URL.git
+    description: <OBLIGATOIRE> Entrez l'URL du dépôt GITLAB contenant le Playbook (ex:https://scm.saas.cagip.group.gca/cagip/cluster-bpcr/industrialisation/depose_matiere/ilgn/ansible/playbooks/depose_matiere_install.git). Les playbooks génériques développés par BPCR sont détaillés içi (https://ttp10-pord.ca-technologies.fr/xwiki/bin/view/Cadre%20de%20r%C3%A9f%C3%A9rence/Fili%C3%A8res%20DevOps/4%20-%20Fili%C3%A8re%20DevOps%20Cloud%20Ready/V2-%20Gitlab-CI/4.1.3%20CD/210%20-%20Focus%20sur%20les%20playbooks/)
+  PLAYBOOK_VERSION:
+    value: $CI_COMMIT_BRANCH
+    description: <OBLIGATOIRE> Entrez la version du dépôt GITLAB contenant le Playbook (ex:2)
+  PLAYBOOK_PATH: "playbook.yml" #Chemin vers le playbook dans le dépot (exemple: playbook.yml) PAR DEFAUT Lié à l'url du dépôt
+    ###########################################################
+    ## DEFINITION DES VARIABLES DU PLAYBOOK
+    ###########################################################
+  PLAYBOOK_VARS_URL:
+    value: $CI_PROJECT_URL.git
+    description: <OBLIGATOIRE> Entrez l'URL du dépôt GITLAB contenant les variables (ex:https://scm.saas.cagip.group.gca/cats/tribu-xxx/pxxxx/sxxxx/sxxxx_service_cd/sxxxx_ansible_vars.git)
+      # deviendra FACULTATIF pour la V3 car variables intégrées dans le starter kit
+  PLAYBOOK_VARS_VERSION:
+    value: $CI_COMMIT_BRANCH
+    description: <OBLIGATOIRE> Entrez la version du dépôt GITLAB contenant les variables (ex:master)
+      # deviendra FACULTATIF pour la V3 car variables intégrées dans le starter kit
+  PLAYBOOK_EXTRA_VARS: # extra vars COMMUNES à tous les ADABOS à séparer par des espaces (le tout entre "")
+    value: "gitv_depot=https://scm.saas.cagip.group.gca/cats/tribu-devops/p0440/cd/starterkit-cd-ansible.git gitv_version=rheia playbook_hosts=zuda0 adabo=zuda0"
+    description: <FACULTATIF> Si vous ne savez pas ce que c'est, merci de vous rapprocher de votre Expert CI/CD
+    ###########################################################
+    ## DEFINITION DE L'INVENTAIRE
+    ###########################################################
+  INVENTORY_URL:
+    value: $CI_PROJECT_URL.git # si non renseigné, == PLAYBOOK_GITLAB_URL
+    description: <OBLIGATOIRE> Entrez l'URL du dépôt GITLAB contenant l'inventaire (ex:https://scm.saas.cagip.group.gca/cats/tribu-xxx/pxxxx/sxxxx/sxxxx_service_cd/sxxxx_ansible_inventaire.git)
+      # deviendra FACULTATIF pour la V3 car inventaire intégré dans le starter kit
+  INVENTORY_VERSION:
+    value: $CI_COMMIT_BRANCH #si non renseignée INVENTORY_VERSION=PLAYBOOK_VERSION
+    description: Entrez la version du dépôt GITLAB contenant l'inventaire (ex:master) => si non renseignée INVENTORY_VERSION=PLAYBOOK_VERSION
+  INVENTORY_PATH: "inventory/inventory.yml" #Chemin vers l'inventaire dans le dépot (exemple: inventory/inventory.yml) PAR DEFAUT Lié à l'url du dépôt
+    ###########################################################
+    ## DEFINITION DES VARIABLES FACULTATIVES
+    ###########################################################
+  PLAYBOOK_TAGS: "" # tags ansible FACULTATIF
+  PLAYBOOK_SKIP_TAGS: "" # skip tags ansible FACULTATIF
+  DOCKER_IMG_VERSION: "" # default a 2.9.24 FACULTATIF
+  NOTIFICATION_MODE: "no" # FACULTATIF default all [no, only_fail, all] et plus tard teams
+  RFC_NUMBER:    # FACULTATIF SAUF POUR LA MEP
+    value: ""
+    description: Entrez le numéro de RFC OBLIGATOIRE POUR LA PROD
+  INVENTORY_LIST: "" # passer le ou les hosts sans inventaire séparées par , FACULTATIF
+  MODE_EXEC: "" # default a serial, possibles: ["serial","parallel"] FACULTATIF
+
+
+#DECLARATION DES STAGES A EXECUTER
+stages:
+  #- preparation
+  - python
+  #- dev
+  #- prod
+
+
+###############################################################
+###############################################################
+
+## INFORMATION: mettre when: always à la fin de la définition d'un job pour automatiser le lancement de ce job
+
+###############################################################
+###############################################################
+#                     NE PAS MODIFIER
+#JOB DE CREATION DE KPI POUR SUIVI STATS FTCR + PRE CHECK
+# pre_check:
+#   extends: .tpl:precheck
+#   stage: preparation
+
+# #JOB DE CONTROLE DES NORMES PLAYBOOK
+# golden_rules:
+#   extends: .tpl:golden_rules
+#   stage: preparation
+
+# #JOB DE LA SYNTAXE DES FICHIERS YML
+# lint_vars:
+#   extends: .tpl:lint
+#   stage: preparation
+
+###############################################################
+###############################################################
+
+#JOB DE DEPLOIEMENT EN DEV POUR LE STAGE DEV
+# deploy-dev:
+#   variables:
+#     PLAYBOOK_HOSTS_CONTEXT: "dev>>adabo=ZUDA0"  # OBLIGATOIRE: positionner l'adabo lié à l'environnement souhaité et FACULTATIF: des variables propres à cette environnement
+#   extends: .tpl:deploy
+#   stage: dev
+
+#JOB DE DEPLOIEMENT EN PROD POUR LE STAGE PROD AVEC CONTROLE RFC OBLIGATOIRE
+#VARIABLE RFC_NUMBER A DEFINIR DANS LES VARIABLES GLOBALE
+# check_rfc:
+#   extends: .tpl:rfc
+#   stage: prod
+
+# deploy-prod:
+#   variables:
+#     PLAYBOOK_HOSTS_CONTEXT: "mup10>>adabo=MUP10" # OBLIGATOIRE: positionner l'adabo lié à l'environnement souhaité et FACULTATIF: des variables propres à cette environnement
+#   extends: .tpl:deploy_prd
+#   stage: prod
+
+###############################################################
+###############################################################
+
+PYTHON1_devtu: #NOM DU JOB
+  extends: .tpl:python
+  variables:
+    REQUESTS_CA_BUNDLE: "/usr/local/share/ca-certificates/carioca-bundle.crt"
+  stage: python
+  script:
+    #- echo $PLAYBOOK_EXTRA_VARS
+    - python python_script/request.py
